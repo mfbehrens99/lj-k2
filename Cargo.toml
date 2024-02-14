@@ -1,0 +1,15 @@
+[package]
+name = "lj-k2"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+grandma2 = {path = "./libs/grandma2"}
+k2_frontend = {path = "./libs/k2_frontend"}
+midir = "0.9.1"
+midi_parse = {path = "./libs/midi_parse"}
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113"
+websockets = "0.3.0"
