@@ -1,6 +1,7 @@
+mod frontend;
+
 extern crate midir;
 extern crate midi_parse;
-extern crate k2_frontend;
 // mod midi_parse;
 
 use midi_parse::{MidiMessage, Note, Velocity, Channel};
@@ -86,8 +87,7 @@ use std::io::{stdin, stdout, Write};
 
 extern crate serde_json;
 
-use k2_frontend::*;
-use serde_json::{Result, Value};
+use frontend::*;
 
 pub fn main() {
     let json_str = r#"{"type": "requestFaderState", "id": "hexagons"}"#;

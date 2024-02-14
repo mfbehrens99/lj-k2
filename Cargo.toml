@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 grandma2 = {path = "./libs/grandma2"}
-k2_frontend = {path = "./libs/k2_frontend"}
 midir = "0.9.1"
 midi_parse = {path = "./libs/midi_parse"}
 serde = { version = "1.0.196", features = ["derive"] }
