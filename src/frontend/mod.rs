@@ -3,7 +3,9 @@ pub mod messages;
 mod presets;
 
 pub use messages::*;
-use serde_json::json;
+use tokio_tungstenite::WebSocketStream;
+
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 use futures_util::{SinkExt, StreamExt};
 use std::{net::SocketAddr, time::Duration};
@@ -15,7 +17,7 @@ use tokio_tungstenite::{
 
 pub struct Frontend {
     listener: TcpListener,
-    // senders: Arc<Mutex<Vec<SplitSink<WebSocketStream<TcpStream>, Message>>>>,
+    senders: Vec<Sender<String>>,
 }
 
 impl Frontend {
@@ -26,69 +28,95 @@ impl Frontend {
         println!("Listening on: {}", address);
         Frontend {
             listener,
-            // senders: Arc::new(Mutex::new(Vec::new())),
+            senders: Vec::new(),
         }
     }
 
-    pub async fn listen(&self) {
+    pub async fn listen(&mut self) {
         while let Ok((stream, _)) = self.listener.accept().await {
-            let peer = stream
-                .peer_addr()
-                .expect("connected streams should have a peer address");
-            println!("Peer address: {}", peer);
-
-            self.accept_connection(peer, stream).await;
+            self.accept_connection(stream).await;
         }
     }
 
-    async fn accept_connection(&self, peer: SocketAddr, stream: TcpStream) {
-        if let Err(e) = self.handle_connection(peer, stream).await {
+    async fn accept_connection(&mut self, stream: TcpStream) {
+        let (channel_tx, channel_rx) = channel::<String>();
+        self.senders.push(channel_tx);
+        let mut f = FrontendClient::new(stream, channel_rx).await;
+        if let Err(e) = f.handle_connection().await {
             match e {
                 Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
                 err => println!("Error processing connection: {}", err),
             }
         }
     }
+}
 
-    async fn handle_connection(&self, peer: SocketAddr, stream: TcpStream) -> Result<()> {
-        let ws_stream = accept_async(stream).await.expect("Failed to accept");
-        println!("New WebSocket connection: {}", peer);
-        let (mut ws_sender, mut ws_receiver) = ws_stream.split();
+pub struct FrontendClient {
+    websocket: WebSocketStream<TcpStream>,
+    channel_rx: Receiver<String>,
+    peer: SocketAddr,
+}
 
+impl FrontendClient {
+    async fn new(stream: TcpStream, channel_rx: Receiver<String>) -> Self {
+        let peer = stream
+            .peer_addr()
+            .expect("connected streams should have a peer address");
+        let websocket = accept_async(stream).await.expect("Failed to accept");
+        println!("Peer address: {}", peer);
+        FrontendClient {
+            websocket,
+            channel_rx,
+            peer,
+        }
+    }
+
+    async fn handle_connection(&mut self) -> Result<()> {
+        println!("New WebSocket connection: {}", self.peer);
+        // let (mut ws_sender, mut ws_receiver) = ws_stream.split();
+        // self.senders.insert(peer, ws_stream);
         let mut interval = tokio::time::interval(Duration::from_secs(5));
-
-        // Echo incoming WebSocket messages and send a message periodically every second.
 
         loop {
             tokio::select! {
-                msg = ws_receiver.next() => {
-                    match msg {
-                        Some(msg) => {
-                            let msg = msg?;
-                            if msg.is_text() || msg.is_binary() {
-                                // echo
-                                ws_sender.send(msg.clone()).await?;
-                                match serde_json::from_str::<ReceiveMessage>(msg.clone().into_text()?.as_str()) {
-                                    Ok(msg) => {println!("Recieved message: {:?}", msg);},
-                                    Err(err) => {println!("Could not read message '{:}': {:}", msg.into_text().unwrap(), err);},
-                                }
-                            } else if msg.is_close() {
-                                println!("Closed connection to {:}", peer);
-                                break;
-                            }
-                        }
-                        None => break,
+                // Receive message from websocket
+                msg = self.websocket.next() => {
+                    if let Some(msg) = msg {
+                        self.handle_message(msg);
                     }
                 }
+                // Heartbeat
                 _ = interval.tick() => {
-                    ws_sender.send(Message::Text(json!({"type": "heartbeat"}).to_string())).await?;
+                    // self.websocket.send(Message::Text(json!({"type": "heartbeat"}).to_string())).await?;
                 }
             }
+            // Receive message from channel
+            if let Ok(msg) = self.channel_rx.try_recv() {
+                self.websocket.send(Message::Text(msg)).await?;
+            }
         }
-
-        Ok(())
     }
 
+    fn handle_message(&self, msg: Result<Message, Error>) {
+        let msg = msg.unwrap();
+        if msg.is_text() || msg.is_binary() {
+            match serde_json::from_str::<ReceiveMessage>(msg.clone().into_text().unwrap().as_str())
+            {
+                Ok(msg) => {
+                    println!("Recieved message: {:?}", msg);
+                }
+                Err(err) => {
+                    println!(
+                        "Could not read message '{:}': {:}",
+                        msg.into_text().unwrap(),
+                        err
+                    );
+                }
+            }
+        } else if msg.is_close() {
+            println!("Closed connection to {:}", self.peer);
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,12 +1,17 @@
 mod frontend;
 
-extern crate midir;
-extern crate midi_parse;
-// mod midi_parse;
+#[tokio::main]
+async fn main() {
 
-use midi_parse::{MidiMessage, Note, Velocity, Channel};
-use midir::{Ignore, MidiInput};
-use std::io::{stdin, stdout, Write};
+    let addr = "127.0.0.1:9002";
+    let mut k2_frontend = frontend::Frontend::new(addr).await;
+    k2_frontend.listen().await;
+}
+
+
+// use midi_parse::{MidiMessage, Note, Velocity, Channel};
+// use midir::{Ignore, MidiInput};
+// use std::io::{stdin, stdout, Write};
 
 // fn main() -> Result<(), Box<dyn std::error::Error>> {
 //     let mut input = String::new();
@@ -84,14 +89,4 @@ use std::io::{stdin, stdout, Write};
 //     Ok(())
 
 // }
-
-extern crate serde_json;
-
-use frontend::*;
-
-pub fn main() {
-    let json_str = r#"{"type": "requestFaderState", "id": "hexagons"}"#;
-    let msg: ReceiveMessage = serde_json::from_str(json_str).unwrap();
-    println!("{:?}", msg);
-}
 
