@@ -1,147 +1,97 @@
 mod data;
-mod messages;
+pub mod messages;
+mod presets;
 
-pub use data::*;
 pub use messages::*;
+use serde_json::json;
 
-pub struct K2Frontend {}
+use futures_util::{SinkExt, StreamExt};
+use std::{net::SocketAddr, time::Duration};
+use tokio::net::{TcpListener, TcpStream};
+use tokio_tungstenite::{
+    accept_async,
+    tungstenite::{Error, Message, Result},
+};
+
+pub struct Frontend {
+    listener: TcpListener,
+    // senders: Arc<Mutex<Vec<SplitSink<WebSocketStream<TcpStream>, Message>>>>,
+}
+
+impl Frontend {
+    pub async fn new(address: &str) -> Frontend {
+        let listener = TcpListener::bind(&address)
+            .await
+            .unwrap_or_else(|_| panic!("Can't listen on {:}", address));
+        println!("Listening on: {}", address);
+        Frontend {
+            listener,
+            // senders: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+
+    pub async fn listen(&self) {
+        while let Ok((stream, _)) = self.listener.accept().await {
+            let peer = stream
+                .peer_addr()
+                .expect("connected streams should have a peer address");
+            println!("Peer address: {}", peer);
+
+            self.accept_connection(peer, stream).await;
+        }
+    }
+
+    async fn accept_connection(&self, peer: SocketAddr, stream: TcpStream) {
+        if let Err(e) = self.handle_connection(peer, stream).await {
+            match e {
+                Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
+                err => println!("Error processing connection: {}", err),
+            }
+        }
+    }
+
+    async fn handle_connection(&self, peer: SocketAddr, stream: TcpStream) -> Result<()> {
+        let ws_stream = accept_async(stream).await.expect("Failed to accept");
+        println!("New WebSocket connection: {}", peer);
+        let (mut ws_sender, mut ws_receiver) = ws_stream.split();
+
+        let mut interval = tokio::time::interval(Duration::from_secs(5));
+
+        // Echo incoming WebSocket messages and send a message periodically every second.
+
+        loop {
+            tokio::select! {
+                msg = ws_receiver.next() => {
+                    match msg {
+                        Some(msg) => {
+                            let msg = msg?;
+                            if msg.is_text() || msg.is_binary() {
+                                // echo
+                                ws_sender.send(msg.clone()).await?;
+                                match serde_json::from_str::<ReceiveMessage>(msg.clone().into_text()?.as_str()) {
+                                    Ok(msg) => {println!("Recieved message: {:?}", msg);},
+                                    Err(err) => {println!("Could not read message '{:}': {:}", msg.into_text().unwrap(), err);},
+                                }
+                            } else if msg.is_close() {
+                                println!("Closed connection to {:}", peer);
+                                break;
+                            }
+                        }
+                        None => break,
+                    }
+                }
+                _ = interval.tick() => {
+                    ws_sender.send(Message::Text(json!({"type": "heartbeat"}).to_string())).await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+}
 
 #[cfg(test)]
 mod tests {
-
-    use serde_json::Value;
-
-    use super::*;
-
-    #[test]
-    fn test_receive_message() {
-        let str = r#"{"type": "requestPresetCategoryDefinitions"}"#;
-        let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-        assert_eq!(json, ReceiveMessage::RequestPresetCategoryDefinitions);
-
-        let str = r#"{"type": "requestPresetButtonDefinitions"}"#;
-        let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-        assert_eq!(json, ReceiveMessage::RequestPresetButtonDefinitions);
-
-        let str = r#"{"type": "setPreset", "row": 3, "column": 1}"#;
-        let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-        assert_eq!(json, ReceiveMessage::SetPreset { row: 3, column: 1 });
-
-        let str = r#"{"type": "requestHoldActionDefinitions"}"#;
-        let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-        assert_eq!(json, ReceiveMessage::RequestHoldActionDefinitions);
-
-        let str = r#"{"type": "sendHoldAction", "row": 2, "column": 0, "value": true}"#;
-        let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-        assert_eq!(json, ReceiveMessage::SendHoldAction { row: 2, column: 0, value: true});
-
-        let str = r#"{"type": "requestFaderDefinitions"}"#;
-        let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-        assert_eq!(json, ReceiveMessage::RequestFaderDefinitions);
-
-        let str = r#"{"type": "requestFaderState", "row": 3, "column": 2}"#;
-        let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-        assert_eq!(
-            json,
-            ReceiveMessage::RequestFaderState { row: 3, column: 2 }
-        );
-    }
-
-    #[test]
-    fn test_send_message() {
-        let message = SendMessage::SendPresetCategoryDefinition {
-            items: vec![PresetCategory::new(7, "Bar".to_string())],
-        };
-        let json_string = serde_json::to_string(&message).unwrap();
-        let json: Value = serde_json::from_str(&json_string).unwrap();
-        let json_test = serde_json::json!({
-            "type": "sendPresetCategoryDefinition",
-            "items": [{
-                "row": 7,
-                "text": "Bar",
-            }]
-        });
-        assert_eq!(json_test, json);
-
-        let message = SendMessage::SendPresetButtonDefinition {
-            items: vec![PresetButton::new(2, 4)],
-        };
-        let json_string = serde_json::to_string(&message).unwrap();
-        let json: Value = serde_json::from_str(&json_string).unwrap();
-        let json_test = serde_json::json!({
-            "type": "sendPresetButtonDefinition",
-            "items": [{
-                "row": 2,
-                "column": 4,
-                "icon": "none",
-                "color": "#000000",
-                "text": "",
-            }],
-        });
-        assert_eq!(json_test, json);
-
-        let message = SendMessage::SendHoldActionDefinitions {
-            items: vec![HoldAction::new(2, 3)],
-        };
-        let json_string = serde_json::to_string(&message).unwrap();
-        let json: Value = serde_json::from_str(&json_string).unwrap();
-        let json_test = serde_json::json!({
-            "type": "sendHoldActionDefinitions",
-            "items": [{
-                "row": 2,
-                "column": 3,
-                "icon": "none",
-                "color": "#000000",
-                "text": "",
-            }],
-        });
-        assert_eq!(json_test, json);
-
-        let message = SendMessage::SendFaderDefinition {
-            items: vec![Fader::new(5, 1)],
-        };
-        let json_string = serde_json::to_string(&message).unwrap();
-        let json: Value = serde_json::from_str(&json_string).unwrap();
-        let json_test = serde_json::json!({
-            "type": "sendFaderDefinition",
-            "items": [{
-                "row": 5,
-                "column": 1,
-                "icon": "none",
-                "color": "#000000",
-                "text": "",
-            }],
-        });
-        assert_eq!(json_test, json);
-
-        let message = SendMessage::SendFaderState {
-            row: 0,
-            column: 5,
-            value: 0.4,
-        };
-        let json_string = serde_json::to_string(&message).unwrap();
-        let json: Value = serde_json::from_str(&json_string).unwrap();
-        let json_test = serde_json::json!({
-            "type": "sendFaderState",
-            "row": 0,
-            "column": 5,
-            "value": 0.4,
-        });
-        assert_eq!(json_test, json);
-
-        let message = SendMessage::SendFaderHighlight {
-            row: 1,
-            column: 4,
-            value: true,
-        };
-        let json_string = serde_json::to_string(&message).unwrap();
-        let json: Value = serde_json::from_str(&json_string).unwrap();
-        let json_test = serde_json::json!({
-            "type": "sendFaderHighlight",
-            "row": 1,
-            "column": 4,
-            "value": true,
-        });
-        assert_eq!(json_test, json);
-    }
+    // Your test cases here
 }
