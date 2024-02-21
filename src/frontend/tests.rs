@@ -39,13 +39,13 @@ fn test_receive_message() {
 
 #[test]
 fn test_send_message() {
-    let message = SendMessage::SendPresetCategoryDefinition {
+    let message = SendMessage::SendPresetCategoryDefinitions {
         items: &[data::PresetCategory::new(7, "Bar")],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
     let json_test = serde_json::json!({
-        "type": "sendPresetCategoryDefinition",
+        "type": "sendPresetCategoryDefinitions",
         "items": [{
             "row": 7,
             "text": "Bar",
@@ -53,13 +53,13 @@ fn test_send_message() {
     });
     assert_eq!(json_test, json);
 
-    let message = SendMessage::SendPresetButtonDefinition {
+    let message = SendMessage::SendPresetButtonDefinitions {
         items: &[PresetButton::new("Hallo Welt!", 2, 4, Icon::Chill, "#000000")],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
     let json_test = serde_json::json!({
-        "type": "sendPresetButtonDefinition",
+        "type": "sendPresetButtonDefinitions",
         "items": [{
             "row": 2,
             "column": 4,
@@ -87,13 +87,13 @@ fn test_send_message() {
     });
     assert_eq!(json_test, json);
 
-    let message = SendMessage::SendFaderDefinition {
+    let message = SendMessage::SendFaderDefinitions {
         items: &[Fader::new(5, 1)],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
     let json_test = serde_json::json!({
-        "type": "sendFaderDefinition",
+        "type": "sendFaderDefinitions",
         "items": [{
             "row": 5,
             "column": 1,

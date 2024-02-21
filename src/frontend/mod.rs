@@ -112,7 +112,7 @@ impl FrontendClient {
                     println!("Recieved message: {:?}", msg);
                     match msg {
                         ReceiveMessage::RequestPresetCategoryDefinitions => {
-                            self.send(messages::SendMessage::SendPresetCategoryDefinition {
+                            self.send(messages::SendMessage::SendPresetCategoryDefinitions {
                                 items: &[
                                     data::PresetCategory::new(0, "Bar"),
                                     data::PresetCategory::new(1, "Tresen"),
@@ -120,7 +120,7 @@ impl FrontendClient {
                             }).await;
                         }
                         ReceiveMessage::RequestPresetButtonDefinitions => {
-                            self.send(messages::SendMessage::SendPresetButtonDefinition {
+                            self.send(messages::SendMessage::SendPresetButtonDefinitions {
                                 items: &[
                                     data::PresetButton::new(
                                         "Bar Chill 1",

@@ -6,16 +6,16 @@ use super::data::*;
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "type")]
 pub enum SendMessage<'a> {
-    SendPresetCategoryDefinition {
+    SendPresetCategoryDefinitions {
         items: &'a [PresetCategory<'a>],
     },
-    SendPresetButtonDefinition {
+    SendPresetButtonDefinitions {
         items: &'a [PresetButton<'a>],
     },
     SendHoldActionDefinitions {
         items: &'a [HoldAction<'a>],
     },
-    SendFaderDefinition {
+    SendFaderDefinitions {
         items: &'a [Fader],
     },
     SendFaderState {
