@@ -155,23 +155,23 @@ impl FrontendClient {
                                         0,
                                         4,
                                         Icon::Rave,
-                                        "#000000",
+                                        "#a541d4",
                                     ),
                                     data::PresetButton::new(
                                         "Bar Rave 2",
                                         0,
                                         5,
                                         Icon::Rave,
-                                        "#000000",
+                                        "#a541d4",
                                     ),
                                     data::PresetButton::new(
                                         "Bar Putzlich",
                                         0,
                                         6,
                                         Icon::Sun,
-                                        "#000000",
+                                        "#e2d195",
                                     ),
-                                    data::PresetButton::new("Bar Aus", 0, 7, Icon::Off, "#000000"),
+                                    data::PresetButton::new("Bar Aus", 0, 7, Icon::Off, "#38365a"),
                                     data::PresetButton::new(
                                         "Tresen Chill",
                                         1,
@@ -191,31 +191,43 @@ impl FrontendClient {
                                         1,
                                         2,
                                         Icon::Rave,
-                                        "#000000",
+                                        "#a541d4",
                                     ),
                                     data::PresetButton::new(
                                         "Tresen Rainbow",
                                         1,
                                         3,
                                         Icon::Rainbow,
-                                        "#000000",
+                                        "#a541d4",
                                     ),
                                     data::PresetButton::new(
                                         "Tresen Putzlicht",
                                         1,
                                         4,
                                         Icon::Sun,
-                                        "#000000",
+                                        "#e2d195",
                                     ),
                                     data::PresetButton::new(
                                         "Tresen Aus",
                                         1,
                                         5,
                                         Icon::Off,
-                                        "#000000",
+                                        "#38365a",
                                     ),
                                 ],
                             }).await;
+                        }
+                        ReceiveMessage::RequestFaderDefinitions => {
+                            self.send(SendMessage::SendFaderDefinitions { items: &[
+                                data::Fader::new("LED Bars", 0,0, Icon::LEDBars, "#95724f"),
+                                data::Fader::new("Sunstripes", 0, 1, Icon::Sunstrip, "#508746"),
+                                data::Fader::new("Moving Heads", 0, 2, Icon::MovingHead, "#968d3f"),
+                                data::Fader::new("Tresen", 0, 3, Icon::CounterFront, "#95724f"),
+                                data::Fader::new("Hexagons", 0, 4, Icon::Hexagon, "#945a5f"),
+                                data::Fader::new("Strobes", 0, 5, Icon::Sun, "#94497a"),
+                                data::Fader::new("H-Bars", 0, 6, Icon::LEDBars, "#8d418e"),
+                                data::Fader::new("Pointies", 0, 7, Icon::MovingHead, "#72429a"),
+                            ] }).await;
                         }
                         _ => (),
                     }

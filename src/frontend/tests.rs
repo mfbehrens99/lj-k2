@@ -88,7 +88,7 @@ fn test_send_message() {
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendFaderDefinitions {
-        items: &[Fader::new(5, 1)],
+        items: &[Fader::new("Fader", 5, 1, Icon::Hexagon, "#696969")],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
@@ -97,9 +97,9 @@ fn test_send_message() {
         "items": [{
             "row": 5,
             "column": 1,
-            "icon": "none",
-            "color": "#000000",
-            "text": "",
+            "icon": "hexagon",
+            "color": "#696969",
+            "text": "Fader",
         }],
     });
     assert_eq!(json_test, json);

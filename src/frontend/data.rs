@@ -10,17 +10,26 @@ pub enum HoldActionId {}
 pub enum Icon {
     None,
     Off,
+
     Sun,
+    Right,
+    Left,
+    Rainbow,
+
     Chill,
     Party,
     Rave,
-    Rainbow,
-    Left,
-    Right,
-    Hexagon,
+
+    #[serde(rename = "led-bars")]
+    LEDBars,
     Sunstrip,
-    Bulb,
     MovingHead,
+    CounterFront,
+    Hexagon,
+
+    CounterBack,
+    Bottles,
+    Bulb,
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
@@ -78,22 +87,22 @@ impl<'a> HoldAction<'a> {
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-pub struct Fader {
+pub struct Fader<'a> {
+    pub text: &'a str,
     row: u8,
     column: u8,
     pub icon: Icon,
-    pub color: String,
-    pub text: String,
+    pub color: &'a str,
 }
 
-impl Fader {
-    pub fn new(row: u8, column: u8) -> Self {
+impl<'a> Fader<'a> {
+    pub fn new(text: &'a str, row: u8, column: u8, icon: Icon, color: &'a str) -> Self {
         Fader {
+            text,
             row,
             column,
-            icon: Icon::None,
-            color: "#000000".to_string(),
-            text: "".to_string(),
+            icon,
+            color,
         }
     }
 }

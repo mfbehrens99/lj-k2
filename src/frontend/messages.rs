@@ -16,7 +16,7 @@ pub enum SendMessage<'a> {
         items: &'a [HoldAction<'a>],
     },
     SendFaderDefinitions {
-        items: &'a [Fader],
+        items: &'a [Fader<'a>],
     },
     SendFaderState {
         row: u8,
@@ -31,13 +31,14 @@ pub enum SendMessage<'a> {
     Heartbeat,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "type")]
 pub enum ReceiveMessage {
     RequestPresetCategoryDefinitions,
     RequestPresetButtonDefinitions,
     RequestHoldActionDefinitions,
+    RequestFaderDefinitions,
     SendHoldAction {
         row: u8,
         column: u8,
@@ -47,7 +48,11 @@ pub enum ReceiveMessage {
         row: u8,
         column: u8,
     },
-    RequestFaderDefinitions,
+    SendFaderState {
+        row: u8,
+        column: u8,
+        state: f32,
+    },
     RequestFaderState {
         row: u8,
         column: u8,
