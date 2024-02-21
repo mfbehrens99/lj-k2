@@ -39,7 +39,7 @@ fn test_receive_message() {
 #[test]
 fn test_send_message() {
     let message = SendMessage::SendPresetCategoryDefinition {
-        items: vec![PresetCategory::new(7, "Bar".to_string())],
+        items: &[data::PresetCategory::new(7, "Bar")],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
@@ -53,7 +53,7 @@ fn test_send_message() {
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendPresetButtonDefinition {
-        items: vec![PresetButton::new(2, 4)],
+        items: &[data::PresetButton::new(2, 4)],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();

@@ -5,18 +5,18 @@ use super::data::*;
 #[derive(Debug, PartialEq, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[serde(tag = "type")]
-pub enum SendMessage {
+pub enum SendMessage<'a> {
     SendPresetCategoryDefinition {
-        items: Vec<PresetCategory>,
+        items: &'a [PresetCategory<'a>],
     },
     SendPresetButtonDefinition {
-        items: Vec<PresetButton>,
+        items: &'a [PresetButton<'a>],
     },
     SendHoldActionDefinitions {
-        items: Vec<HoldAction>,
+        items: &'a [HoldAction<'a>],
     },
     SendFaderDefinition {
-        items: Vec<Fader>,
+        items: &'a [Fader],
     },
     SendFaderState {
         row: u8,

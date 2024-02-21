@@ -1,3 +1,12 @@
+// use strum::IntoEnumIterator;
+// use strum::EnumIter;
+
+use enum_iterator::{Sequence, all, cardinality};
+
+use super::data;
+use super::data::Icon;
+
+#[derive(Debug, Sequence, PartialEq, Eq, Clone, Copy)]
 pub enum Preset {
     BarChill1,
     BarChill2,
@@ -41,6 +50,68 @@ impl Preset {
                 _ => Err(()),
             },
             _ => Err(()),
+        }
+    }
+
+    pub fn to_preset<'a>(self) -> data::PresetButton<'a> {
+        use Preset as P;
+        use data::PresetButton as PB;
+        match self {
+            P::BarChill1 => PB::<'a>::new("Bar Chill 1", 0, 0, Icon::Chill, "#c06541"),
+            P::BarChill2 => PB::<'a>::new("Bar Chill 2", 0, 1, Icon::Chill, "#c06541"),
+            P::BarParty1 => PB::<'a>::new("Bar Party 1", 0, 2, Icon::Party, "#41c0a6"),
+            P::BarParty2 => PB::<'a>::new("Bar Chill 1", 0, 3, Icon::Party, "#41c0a6"),
+            P::BarRave1 => PB::<'a>::new("Bar Chill 1", 0, 4, Icon::Rave, "#000000"),
+            P::BarRave2 => PB::<'a>::new("Bar Chill 1", 0, 5, Icon::Rave, "#000000"),
+            P::BarPutzlicht => PB::<'a>::new("Bar Chill 1", 0, 6, Icon::Sun, "#000000"),
+            P::BarOff => PB::<'a>::new("Bar Chill 1", 0, 7, Icon::Off, "#000000"),
+            P::TresenChill => PB::<'a>::new("Bar Chill 1", 1, 0, Icon::Chill, "#c06541"),
+            P::TresenParty => PB::<'a>::new("Bar Chill 1", 1, 1, Icon::Party, "#41c0a6"),
+            P::TresenRave => PB::<'a>::new("Bar Chill 1", 1, 2, Icon::Rave, "#000000"),
+            P::TresenRainbow => PB::<'a>::new("Bar Chill 1", 1, 3, Icon::Rainbow, "#000000"),
+            P::TresenPutzlicht => PB::<'a>::new("Bar Chill 1", 1, 4, Icon::Sun, "#000000"),
+            P::TresenOff => PB::<'a>::new("Bar Chill 1", 1, 5, Icon::Off, "#000000"),
+        }
+    }
+
+    // pub fn all_presets<'a>() -> &'a [data::PresetButton<'a>] {
+    //     let mut presets = Vec::with_capacity(cardinality::<Preset>());
+    //     for preset in all::<Preset>() {
+    //         presets.push(preset.to_preset());
+    //     }
+    //     let p: &[data::PresetButton<'a>] = presets.try_into().unwrap()
+    // }
+    
+}
+
+// let PRESET_DEFINITIONS: &[data::PresetButton] = & [
+//     data::PresetButton::<'static>::new("Bar Chill 1", 0, 0, Icon::Chill, "#c06541"),
+//     data::PresetButton::<'static>::new("Bar Chill 2", 0, 1, Icon::Chill, "#c06541"),
+//     data::PresetButton::<'static>::new("Bar Party 1", 0, 2, Icon::Party, "#41c0a6"),
+//     data::PresetButton::<'static>::new("Bar Party 2", 0, 3, Icon::Party, "#41c0a6"),
+//     data::PresetButton::<'static>::new("Bar Rave 1", 0, 4, Icon::Rave, "#000000"),
+//     data::PresetButton::<'static>::new("Bar Rave 2", 0, 5, Icon::Rave, "#000000"),
+//     data::PresetButton::<'static>::new("Bar Putzlich", 0, 6, Icon::Sun, "#000000"),
+//     data::PresetButton::<'static>::new("Bar Aus", 0, 7, Icon::Off, "#000000"),
+//     data::PresetButton::<'static>::new("Tresen Chill", 1, 0, Icon::Chill, "#c06541"),
+//     data::PresetButton::<'static>::new("Tresen Party", 1, 1, Icon::Party, "#41c0a6"),
+//     data::PresetButton::<'static>::new("Tresen Rave", 1, 2, Icon::Rave, "#000000"),
+//     data::PresetButton::<'static>::new("Tresen Rainbow", 1, 3, Icon::Rainbow, "#000000"),
+//     data::PresetButton::<'static>::new("Tresen Putzlicht", 1, 4, Icon::Sun, "#000000"),
+//     data::PresetButton::<'static>::new("Tresen Aus", 1, 5, Icon::Off, "#000000"),
+// ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use enum_iterator::all;
+
+    #[test]
+    fn test_preset_mapping() {
+        for preset in all::<Preset>() {
+            let p = preset.to_preset();
+            assert_eq!(preset, Preset::from_row_column(p.row, p.column).unwrap());
         }
     }
 }
