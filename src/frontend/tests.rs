@@ -1,6 +1,7 @@
 use serde_json::Value;
 
 use super::*;
+use super::data::*;
 
 #[test]
 fn test_receive_message() {
@@ -53,7 +54,7 @@ fn test_send_message() {
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendPresetButtonDefinition {
-        items: &[data::PresetButton::new(2, 4)],
+        items: &[PresetButton::new("Hallo Welt!", 2, 4, Icon::Chill, "#000000")],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
@@ -62,15 +63,15 @@ fn test_send_message() {
         "items": [{
             "row": 2,
             "column": 4,
-            "icon": "none",
+            "icon": "chill",
             "color": "#000000",
-            "text": "",
+            "text": "Hallo Welt!",
         }],
     });
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendHoldActionDefinitions {
-        items: vec![HoldAction::new(2, 3)],
+        items: &[HoldAction::new("Test", 2, 3, Icon::Party, "#111111")],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
@@ -79,15 +80,15 @@ fn test_send_message() {
         "items": [{
             "row": 2,
             "column": 3,
-            "icon": "none",
-            "color": "#000000",
-            "text": "",
+            "icon": "party",
+            "color": "#111111",
+            "text": "Test",
         }],
     });
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendFaderDefinition {
-        items: vec![Fader::new(5, 1)],
+        items: &[Fader::new(5, 1)],
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();

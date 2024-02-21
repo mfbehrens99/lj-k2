@@ -1,4 +1,5 @@
 mod frontend;
+mod midi;
 
 use frontend::Frontend;
 

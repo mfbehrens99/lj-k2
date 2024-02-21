@@ -28,6 +28,7 @@ pub enum SendMessage<'a> {
         column: u8,
         value: bool,
     },
+    Heartbeat,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize)]
