@@ -19,26 +19,24 @@ use tokio_tungstenite::{
 
 use crate::frontend::data::Icon;
 
-
+#[derive(Debug)]
 pub struct Frontend {
-    listener: TcpListener,
     senders: Vec<Sender<String>>,
 }
 
 impl Frontend {
-    pub async fn new(address: &str) -> Frontend {
-        let listener = TcpListener::bind(&address)
-            .await
-            .unwrap_or_else(|_| panic!("Can't listen on {:}", address));
-        println!("Listening on: {}", address);
+    pub fn new() -> Frontend {
         Frontend {
-            listener,
             senders: Vec::new(),
         }
     }
 
-    pub async fn listen(&mut self) {
-        while let Ok((stream, _)) = self.listener.accept().await {
+    pub async fn listen(&mut self, address: &str) {
+        let listener = TcpListener::bind(&address)
+        .await
+        .unwrap_or_else(|_| panic!("Can't listen on {:}", address));
+        println!("Listening for frontend on {}", address);
+        while let Ok((stream, _)) = listener.accept().await {
             self.accept_connection(stream).await;
         }
     }
