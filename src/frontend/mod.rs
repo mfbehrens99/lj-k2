@@ -18,24 +18,28 @@ use tokio_tungstenite::{
 };
 
 use crate::frontend::data::Icon;
+use crate::LjK2;
 
-#[derive(Debug)]
 pub struct Frontend {
+    main: LjK2,
+    address: String,
     senders: Vec<Sender<String>>,
 }
 
 impl Frontend {
-    pub fn new() -> Frontend {
+    pub fn new(main: &LjK2, address: &str) -> Frontend {
         Frontend {
+            main: main.clone(),
+            address: address.to_owned(),
             senders: Vec::new(),
         }
     }
 
-    pub async fn listen(&mut self, address: &str) {
-        let listener = TcpListener::bind(&address)
-        .await
-        .unwrap_or_else(|_| panic!("Can't listen on {:}", address));
-        println!("Listening for frontend on {}", address);
+    pub async fn listen(&mut self) {
+        let listener = TcpListener::bind(&self.address)
+            .await
+            .unwrap_or_else(|_| panic!("Can't listen on {:}", self.address));
+        println!("Listening for frontend on {}", self.address);
         while let Ok((stream, _)) = listener.accept().await {
             self.accept_connection(stream).await;
         }
@@ -115,7 +119,8 @@ impl FrontendClient {
                                     data::PresetCategory::new(0, "Bar"),
                                     data::PresetCategory::new(1, "Tresen"),
                                 ],
-                            }).await;
+                            })
+                            .await;
                         }
                         ReceiveMessage::RequestPresetButtonDefinitions => {
                             self.send(messages::SendMessage::SendPresetButtonDefinitions {
@@ -213,19 +218,29 @@ impl FrontendClient {
                                         "#38365a",
                                     ),
                                 ],
-                            }).await;
+                            })
+                            .await;
                         }
                         ReceiveMessage::RequestFaderDefinitions => {
-                            self.send(SendMessage::SendFaderDefinitions { items: &[
-                                data::Fader::new("LED Bars", 0,0, Icon::LEDBars, "#95724f"),
-                                data::Fader::new("Sunstripes", 0, 1, Icon::Sunstrip, "#508746"),
-                                data::Fader::new("Moving Heads", 0, 2, Icon::MovingHead, "#968d3f"),
-                                data::Fader::new("Tresen", 0, 3, Icon::CounterFront, "#95724f"),
-                                data::Fader::new("Hexagons", 0, 4, Icon::Hexagon, "#945a5f"),
-                                data::Fader::new("Strobes", 0, 5, Icon::Sun, "#94497a"),
-                                data::Fader::new("H-Bars", 0, 6, Icon::LEDBars, "#8d418e"),
-                                data::Fader::new("Pointies", 0, 7, Icon::MovingHead, "#72429a"),
-                            ] }).await;
+                            self.send(SendMessage::SendFaderDefinitions {
+                                items: &[
+                                    data::Fader::new("LED Bars", 0, 0, Icon::LEDBars, "#95724f"),
+                                    data::Fader::new("Sunstripes", 0, 1, Icon::Sunstrip, "#508746"),
+                                    data::Fader::new(
+                                        "Moving Heads",
+                                        0,
+                                        2,
+                                        Icon::MovingHead,
+                                        "#968d3f",
+                                    ),
+                                    data::Fader::new("Tresen", 0, 3, Icon::CounterFront, "#95724f"),
+                                    data::Fader::new("Hexagons", 0, 4, Icon::Hexagon, "#945a5f"),
+                                    data::Fader::new("Strobes", 0, 5, Icon::Sun, "#94497a"),
+                                    data::Fader::new("H-Bars", 0, 6, Icon::LEDBars, "#8d418e"),
+                                    data::Fader::new("Pointies", 0, 7, Icon::MovingHead, "#72429a"),
+                                ],
+                            })
+                            .await;
                         }
                         _ => (),
                     }
@@ -246,8 +261,6 @@ impl FrontendClient {
     async fn send<'a>(&mut self, msg: SendMessage<'a>) {
         let string = serde_json::to_string(&msg).unwrap();
         println!("Sending '{:}'", string);
-        let _ = self
-            .websocket
-            .send(Message::Text(string)).await;
+        let _ = self.websocket.send(Message::Text(string)).await;
     }
 }
