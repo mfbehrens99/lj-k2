@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub enum HoldActionId {}
-
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -33,76 +31,79 @@ pub enum Icon {
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-pub struct PresetCategory<'a> {
+pub struct PresetCategory {
     row: u8,
-    text: &'a str,
+    text: String,
 }
 
-impl<'a> PresetCategory<'a> {
-    pub fn new(row: u8, text: &'a str) -> PresetCategory<'a> {
-        PresetCategory { row, text }
+impl PresetCategory {
+    pub fn new(row: u8, text: &str) -> PresetCategory {
+        PresetCategory {
+            row,
+            text: text.to_string(),
+        }
     }
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-pub struct PresetButton<'a> {
-    text: &'a str,
+pub struct PresetButton {
+    text: String,
     pub row: u8,
     pub column: u8,
     icon: Icon,
-    color: &'a str,
+    color: String,
 }
 
-impl<'a> PresetButton<'a> {
-    pub fn new(text: &'a str, row: u8, column: u8, icon: Icon, color: &'a str) -> PresetButton<'a> {
+impl PresetButton {
+    pub fn new(text: &str, row: u8, column: u8, icon: Icon, color: &str) -> PresetButton {
         PresetButton {
-            text,
+            text: text.to_string(),
             row,
             column,
             icon,
-            color,
+            color: color.to_string(),
         }
     }
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-pub struct HoldAction<'a> {
-    text: &'a str,
+pub struct HoldAction {
+    text: String,
     row: u8,
     column: u8,
     icon: Icon,
-    color: &'a str,
+    color: String,
 }
 
-impl<'a> HoldAction<'a> {
-    pub fn new(text: &'a str, row: u8, column: u8, icon: Icon, color: &'a str) -> HoldAction<'a> {
+impl HoldAction {
+    pub fn new(text: &str, row: u8, column: u8, icon: Icon, color: &str) -> Self {
         HoldAction {
-            text,
+            text: text.to_string(),
             row,
             column,
             icon,
-            color,
+            color: color.to_string(),
         }
     }
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-pub struct Fader<'a> {
-    pub text: &'a str,
+pub struct Fader {
+    pub text: String,
     row: u8,
     column: u8,
     pub icon: Icon,
-    pub color: &'a str,
+    pub color: String,
 }
 
-impl<'a> Fader<'a> {
-    pub fn new(text: &'a str, row: u8, column: u8, icon: Icon, color: &'a str) -> Self {
+impl Fader {
+    pub fn new(text: &str, row: u8, column: u8, icon: Icon, color: &str) -> Self {
         Fader {
-            text,
+            text: text.to_string(),
             row,
             column,
             icon,
-            color,
+            color: color.to_string(),
         }
     }
 }

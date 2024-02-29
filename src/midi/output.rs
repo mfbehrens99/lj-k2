@@ -5,7 +5,7 @@ use std::{
 };
 use tokio::time::sleep;
 
-use crate::LjK2;
+use crate::LJK2;
 
 use super::connection::{DeviceType, MidiConnection};
 use super::MidiInterface;
@@ -16,7 +16,7 @@ pub struct MidiOut {
 }
 
 impl MidiOut {
-    pub fn new(main: &LjK2) -> MidiOut {
+    pub fn new(main: &LJK2) -> MidiOut {
         MidiOut {
             midi_interface: main.midi.clone(),
             connected_devices: HashSet::new(),

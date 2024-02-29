@@ -53,24 +53,24 @@ impl Preset {
         }
     }
 
-    pub fn to_preset<'a>(self) -> data::PresetButton<'a> {
+    pub fn to_preset<'a>(self) -> data::PresetButton {
         use Preset as P;
         use data::PresetButton as PB;
         match self {
-            P::BarChill1 => PB::<'a>::new("Bar Chill 1", 0, 0, Icon::Chill, "#c06541"),
-            P::BarChill2 => PB::<'a>::new("Bar Chill 2", 0, 1, Icon::Chill, "#c06541"),
-            P::BarParty1 => PB::<'a>::new("Bar Party 1", 0, 2, Icon::Party, "#41c0a6"),
-            P::BarParty2 => PB::<'a>::new("Bar Chill 1", 0, 3, Icon::Party, "#41c0a6"),
-            P::BarRave1 => PB::<'a>::new("Bar Chill 1", 0, 4, Icon::Rave, "#a541d4"),
-            P::BarRave2 => PB::<'a>::new("Bar Chill 1", 0, 5, Icon::Rave, "#a541d4"),
-            P::BarPutzlicht => PB::<'a>::new("Bar Chill 1", 0, 6, Icon::Sun, "#e2d195"),
-            P::BarOff => PB::<'a>::new("Bar Chill 1", 0, 7, Icon::Off, "#38365a"),
-            P::TresenChill => PB::<'a>::new("Bar Chill 1", 1, 0, Icon::Chill, "#c06541"),
-            P::TresenParty => PB::<'a>::new("Bar Chill 1", 1, 1, Icon::Party, "#41c0a6"),
-            P::TresenRave => PB::<'a>::new("Bar Chill 1", 1, 2, Icon::Rave, "#000000"),
-            P::TresenRainbow => PB::<'a>::new("Bar Chill 1", 1, 3, Icon::Rainbow, "#000000"),
-            P::TresenPutzlicht => PB::<'a>::new("Bar Chill 1", 1, 4, Icon::Sun, "#000000"),
-            P::TresenOff => PB::<'a>::new("Bar Chill 1", 1, 5, Icon::Off, "#000000"),
+            P::BarChill1 => PB::new("Bar Chill 1", 0, 0, Icon::Chill, "#c06541"),
+            P::BarChill2 => PB::new("Bar Chill 2", 0, 1, Icon::Chill, "#c06541"),
+            P::BarParty1 => PB::new("Bar Party 1", 0, 2, Icon::Party, "#41c0a6"),
+            P::BarParty2 => PB::new("Bar Chill 1", 0, 3, Icon::Party, "#41c0a6"),
+            P::BarRave1 => PB::new("Bar Chill 1", 0, 4, Icon::Rave, "#a541d4"),
+            P::BarRave2 => PB::new("Bar Chill 1", 0, 5, Icon::Rave, "#a541d4"),
+            P::BarPutzlicht => PB::new("Bar Chill 1", 0, 6, Icon::Sun, "#e2d195"),
+            P::BarOff => PB::new("Bar Chill 1", 0, 7, Icon::Off, "#38365a"),
+            P::TresenChill => PB::new("Bar Chill 1", 1, 0, Icon::Chill, "#c06541"),
+            P::TresenParty => PB::new("Bar Chill 1", 1, 1, Icon::Party, "#41c0a6"),
+            P::TresenRave => PB::new("Bar Chill 1", 1, 2, Icon::Rave, "#000000"),
+            P::TresenRainbow => PB::new("Bar Chill 1", 1, 3, Icon::Rainbow, "#000000"),
+            P::TresenPutzlicht => PB::new("Bar Chill 1", 1, 4, Icon::Sun, "#000000"),
+            P::TresenOff => PB::new("Bar Chill 1", 1, 5, Icon::Off, "#000000"),
         }
     }
 

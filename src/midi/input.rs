@@ -3,16 +3,16 @@ use midir::{Ignore, MidiInputConnection};
 use std::{collections::HashSet, time::Duration};
 use tokio::time::sleep;
 
-use crate::LjK2;
+use crate::LJK2;
 
 pub struct MidiIn {
-    main: LjK2,
+    main: LJK2,
     connected_devices: HashSet<String>,
-    connections: Vec<MidiInputConnection<LjK2>>,
+    connections: Vec<MidiInputConnection<LJK2>>,
 }
 
 impl MidiIn {
-    pub fn new(main: &LjK2) -> MidiIn {
+    pub fn new(main: &LJK2) -> MidiIn {
         MidiIn {
             main: main.clone(),
             connected_devices: HashSet::new(),
@@ -44,7 +44,7 @@ impl MidiIn {
                         }
                     };
 
-                    let _conn_in: MidiInputConnection<LjK2> = midi_in
+                    let _conn_in: MidiInputConnection<LJK2> = midi_in
                         .connect(port, "LJK2 midi in device", callback, self.main.clone())
                         .unwrap();
                     self.connections.push(_conn_in);
@@ -56,13 +56,13 @@ impl MidiIn {
     }
 }
 
-fn handle_midi_message_launchpad<'a, 'b>(_timestamp: u64, message: &'a [u8], data: &'b mut LjK2) {
+fn handle_midi_message_launchpad<'a, 'b>(_timestamp: u64, message: &'a [u8], data: &'b mut LJK2) {
     let msg = MidiMessage::from(message).unwrap();
     println!("Launchpad: {:?}", msg);
     data.midi.lock().unwrap().send(msg, crate::midi::connection::DeviceType::Launchpad)
 }
 
-fn handle_midi_message_xtouch<'a, 'b>(_timestamp: u64, message: &'a [u8], data: &'b mut LjK2) {
+fn handle_midi_message_xtouch<'a, 'b>(_timestamp: u64, message: &'a [u8], data: &'b mut LJK2) {
     let msg = MidiMessage::from(message).unwrap();
     println!("X-Touch:   {:?}", msg);
     if msg

@@ -18,16 +18,16 @@ use tokio_tungstenite::{
 };
 
 use crate::frontend::data::Icon;
-use crate::LjK2;
+use crate::LJK2;
 
 pub struct Frontend {
-    main: LjK2,
+    main: LJK2,
     address: String,
     senders: Vec<Sender<String>>,
 }
 
 impl Frontend {
-    pub fn new(main: &LjK2, address: &str) -> Frontend {
+    pub fn new(main: &LJK2, address: &str) -> Frontend {
         Frontend {
             main: main.clone(),
             address: address.to_owned(),

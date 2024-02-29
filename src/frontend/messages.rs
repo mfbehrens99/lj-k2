@@ -7,16 +7,16 @@ use super::data::*;
 #[serde(tag = "type")]
 pub enum SendMessage<'a> {
     SendPresetCategoryDefinitions {
-        items: &'a [PresetCategory<'a>],
+        items: &'a [PresetCategory],
     },
     SendPresetButtonDefinitions {
-        items: &'a [PresetButton<'a>],
+        items: &'a [PresetButton],
     },
     SendHoldActionDefinitions {
-        items: &'a [HoldAction<'a>],
+        items: &'a [HoldAction],
     },
     SendFaderDefinitions {
-        items: &'a [Fader<'a>],
+        items: &'a [Fader],
     },
     SendFaderState {
         row: u8,
