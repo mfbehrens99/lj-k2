@@ -65,7 +65,7 @@ mod tests {
         let data = vec![0b1111_0000, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0b1111_0111];
         let result = MidiMessage::from(&data).unwrap();
         let midi_data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        assert_eq!(result, MidiMessage::SysExMessage(&midi_data));
+        assert_eq!(result, MidiMessage::SysExMessage(Box::new(midi_data)));
 
         let data_check = result.to_bytes();
         assert_eq!(data, data_check);

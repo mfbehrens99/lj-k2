@@ -3,7 +3,7 @@ use crate::types::*;
 
 /// Represents a MIDI message
 #[derive(Eq, PartialEq, Debug, Clone)]
-pub enum MidiMessage<'a> {
+pub enum MidiMessage {
     NoteOn {
         channel: Channel,
         note: Note,
@@ -36,7 +36,7 @@ pub enum MidiMessage<'a> {
         channel: Channel,
         pitch: Pitch,
     },
-    SysExMessage(&'a [u8]),
+    SysExMessage(Box<[u8]>),
     SongPositionPointer {
         position: Position,
     },
@@ -52,8 +52,8 @@ pub enum MidiMessage<'a> {
     Reset,
 }
 
-impl<'a> MidiMessage<'a> {
-    pub fn from(data: &'a [u8]) -> Result<MidiMessage, MidiMessageError> {
+impl MidiMessage {
+    pub fn from(data: &[u8]) -> Result<MidiMessage, MidiMessageError> {
         let length = data.len();
         let channel = Channel::from(data[0] & CHANNEL_MASK)?;
         match data[0] & STATUS_BYTE_MASK {
@@ -98,7 +98,7 @@ impl<'a> MidiMessage<'a> {
                     return Err(MidiMessageError::InvalidLength);
                 }
                 let sysex_message: &[u8] = &data[1..=length - 2];
-                Ok(MidiMessage::SysExMessage(sysex_message))
+                Ok(MidiMessage::SysExMessage(sysex_message.into()))
             }
             SONG_POSITION_POINTER_MASK => Ok(MidiMessage::SongPositionPointer {
                 position: Position::from(data[1], data[2])?,
@@ -183,7 +183,7 @@ impl<'a> MidiMessage<'a> {
                 let [byte2, byte3] = pitch.to_bytes();
                 vec![PITCH_WHEEL_CHANGE_MASK | channel.to_byte(), byte2, byte3]
             }
-            MM::SysExMessage(message) => [&[SYSEX_MESSAGE_MASK], &message[..]].concat(),
+            MM::SysExMessage(message) => [&[SYSEX_MESSAGE_MASK], &message[..], &[SYSEX_MESSAGE_END_MASK]].concat(),
             MM::SongPositionPointer { position } => {
                 let [byte2, byte3] = position.to_bytes();
                 vec![SONG_POSITION_POINTER_MASK, byte2, byte3]
