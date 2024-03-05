@@ -1,7 +1,7 @@
 use serde_json::Value;
 
-use super::*;
 use super::data::*;
+use super::*;
 
 #[test]
 fn test_receive_message() {
@@ -23,7 +23,14 @@ fn test_receive_message() {
 
     let str = r#"{"type": "sendHoldAction", "row": 2, "column": 0, "value": true}"#;
     let json: ReceiveMessage = serde_json::from_str(str).unwrap();
-    assert_eq!(json, ReceiveMessage::SendHoldAction { row: 2, column: 0, value: true});
+    assert_eq!(
+        json,
+        ReceiveMessage::SendHoldAction {
+            row: 2,
+            column: 0,
+            value: true
+        }
+    );
 
     let str = r#"{"type": "requestFaderDefinitions"}"#;
     let json: ReceiveMessage = serde_json::from_str(str).unwrap();
@@ -40,7 +47,7 @@ fn test_receive_message() {
 #[test]
 fn test_send_message() {
     let message = SendMessage::SendPresetCategoryDefinitions {
-        items: &[data::PresetCategory::new(7, "Bar")],
+        items: Box::new([data::PresetCategory::new(7, "Bar")]),
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
@@ -54,7 +61,13 @@ fn test_send_message() {
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendPresetButtonDefinitions {
-        items: &[PresetButton::new("Hallo Welt!", 2, 4, Icon::Chill, "#000000")],
+        items: Box::new([PresetButton::new(
+            "Hallo Welt!",
+            2,
+            4,
+            Icon::Chill,
+            "#000000",
+        )]),
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
@@ -71,7 +84,7 @@ fn test_send_message() {
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendHoldActionDefinitions {
-        items: &[HoldAction::new("Test", 2, 3, Icon::Party, "#111111")],
+        items: Box::new([HoldAction::new("Test", 2, 3, Icon::Party, "#111111")]),
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();
@@ -88,7 +101,7 @@ fn test_send_message() {
     assert_eq!(json_test, json);
 
     let message = SendMessage::SendFaderDefinitions {
-        items: &[Fader::new("Fader", 5, 1, Icon::Hexagon, "#696969")],
+        items: Box::new([Fader::new("Fader", 5, 1, Icon::Hexagon, "#696969")]),
     };
     let json_string = serde_json::to_string(&message).unwrap();
     let json: Value = serde_json::from_str(&json_string).unwrap();

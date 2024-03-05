@@ -40,7 +40,7 @@ impl PresetCategory {
     pub fn new(row: u8, text: &str) -> PresetCategory {
         PresetCategory {
             row,
-            text: text.to_string(),
+            text: text.to_owned(),
         }
     }
 }
@@ -57,11 +57,11 @@ pub struct PresetButton {
 impl PresetButton {
     pub fn new(text: &str, row: u8, column: u8, icon: Icon, color: &str) -> PresetButton {
         PresetButton {
-            text: text.to_string(),
+            text: text.to_owned(),
             row,
             column,
             icon,
-            color: color.to_string(),
+            color: color.to_owned(),
         }
     }
 }
@@ -78,11 +78,11 @@ pub struct HoldAction {
 impl HoldAction {
     pub fn new(text: &str, row: u8, column: u8, icon: Icon, color: &str) -> Self {
         HoldAction {
-            text: text.to_string(),
+            text: text.to_owned(),
             row,
             column,
             icon,
-            color: color.to_string(),
+            color: color.to_owned(),
         }
     }
 }
@@ -99,11 +99,11 @@ pub struct Fader {
 impl Fader {
     pub fn new(text: &str, row: u8, column: u8, icon: Icon, color: &str) -> Self {
         Fader {
-            text: text.to_string(),
+            text: text.to_owned(),
             row,
             column,
             icon,
-            color: color.to_string(),
+            color: color.to_owned(),
         }
     }
 }

@@ -1,27 +1,29 @@
 use std::sync::{mpsc, Arc};
 
+use midi_parse::MidiMessage;
 use midir::MidiOutputConnection;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum DeviceType {
     XTouch,
     Launchpad,
 }
 
 pub struct MidiConnection {
-    // name: String,
+    pub name: String,
     device_type: DeviceType,
     sender: mpsc::Sender<Arc<[u8]>>,
 }
 
 impl MidiConnection {
-    pub fn new(connection: MidiOutputConnection, device_type: DeviceType) -> Self {
+    pub fn new(name: &str, connection: MidiOutputConnection, device_type: DeviceType) -> Self {
         let (sender, receiver) = mpsc::channel();
         let _handle = tokio::spawn(async move {
             Self::run_connection(connection, receiver).await;
         });
 
         MidiConnection {
+            name: name.to_owned(),
             device_type,
             sender,
         }
@@ -44,4 +46,10 @@ impl MidiConnection {
             connection.send(&msg).unwrap();
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct MessageMidi {
+    pub midi_msg: MidiMessage,
+    pub device_type: DeviceType,
 }
