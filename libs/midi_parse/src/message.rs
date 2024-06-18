@@ -52,6 +52,7 @@ pub enum MidiMessage {
     Reset,
 }
 
+// Todo implement as From<AsRef<[u8]>> trait
 impl MidiMessage {
     pub fn from(data: &[u8]) -> Result<MidiMessage, MidiMessageError> {
         let length = data.len();
@@ -117,7 +118,7 @@ impl MidiMessage {
         }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Box<[u8]> {
         use MidiMessage as MM;
         match self {
             MM::NoteOn {
@@ -125,79 +126,79 @@ impl MidiMessage {
                 note,
                 velocity,
             } => {
-                vec![
+                [
                     NOTE_ON_MASK | channel.to_byte(),
                     note.to_byte(),
                     velocity.to_byte(),
-                ]
+                ].into()
             }
             MM::NoteOff {
                 channel,
                 note,
                 velocity,
             } => {
-                vec![
+                [
                     NOTE_OFF_MASK | channel.to_byte(),
                     note.to_byte(),
                     velocity.to_byte(),
-                ]
+                ].into()
             }
             MM::PolyphonicKeyPressure {
                 channel,
                 note,
                 pressure,
             } => {
-                vec![
+                [
                     POLYPHONIC_KEY_PRESSURE_MASK | channel.to_byte(),
                     note.to_byte(),
                     pressure.to_byte(),
-                ]
+                ].into()
             }
             MM::ControlChange {
                 channel,
                 controller_number,
                 value,
             } => {
-                vec![
+                [
                     CONTROL_CHANGE_MASK | channel.to_byte(),
                     controller_number.to_byte(),
                     value.to_byte(),
-                ]
+                ].into()
             }
             MM::ProgramChange {
                 channel,
                 program_number,
             } => {
-                vec![
+                [
                     PROGRAM_CHANGE_MASK | channel.to_byte(),
                     program_number.to_byte(),
-                ]
+                ].into()
             }
             MM::ChannelPressure { channel, pressure } => {
-                vec![
+                [
                     CHANNEL_PRESSURE_MASK | channel.to_byte(),
                     pressure.to_byte(),
-                ]
+                ].into()
             }
             MM::PitchWheelChange { channel, pitch } => {
                 let [byte2, byte3] = pitch.to_bytes();
-                vec![PITCH_WHEEL_CHANGE_MASK | channel.to_byte(), byte2, byte3]
+                [PITCH_WHEEL_CHANGE_MASK | channel.to_byte(), byte2, byte3].into()
             }
-            MM::SysExMessage(message) => [&[SYSEX_MESSAGE_MASK], &message[..], &[SYSEX_MESSAGE_END_MASK]].concat(),
+            MM::SysExMessage(message) => [&[SYSEX_MESSAGE_MASK], &message[..], &[SYSEX_MESSAGE_END_MASK]].concat().into(),
             MM::SongPositionPointer { position } => {
                 let [byte2, byte3] = position.to_bytes();
-                vec![SONG_POSITION_POINTER_MASK, byte2, byte3]
+                Box::new([SONG_POSITION_POINTER_MASK, byte2, byte3])
             }
             MM::SongSelect { song } => {
-                vec![SONG_SELECT_MASK, song.to_byte()]
+                Box::new([SONG_SELECT_MASK, song.to_byte()])
             }
-            MM::TimingClock => vec![TIMING_CLOCK_MASK],
-            MM::Start => vec![START_MASK],
-            MM::Continue => vec![CONTINUE_MASK],
-            MM::Stop => vec![STOP_MASK],
-            MM::ActiveSensing => vec![ACTIVE_SENSING_MASK],
-            MM::Reset => vec![RESET_MASK],
-            MM::TuneRequest => vec![TUNE_REQUEST_MASK],
+            MM::TimingClock => [TIMING_CLOCK_MASK].into(),
+            MM::Start => [START_MASK].into(),
+            MM::Continue => [CONTINUE_MASK].into(),
+            MM::Stop => [STOP_MASK].into(),
+            MM::ActiveSensing => [ACTIVE_SENSING_MASK].into(),
+            MM::Reset => [RESET_MASK].into(),
+            MM::TuneRequest => [TUNE_REQUEST_MASK].into(),
         }
     }
 

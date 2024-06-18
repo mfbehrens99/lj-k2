@@ -18,13 +18,16 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(address: &str, tx_incoming_msgs: mpsc::Sender<ReceiveMessage>) -> Self {
+    pub fn new<T>(address: T, tx_incoming_msgs: mpsc::Sender<ReceiveMessage>) -> Self
+    where
+        T: Into<String>,
+    {
         let (tx_outgoing_msgs, rx_outgoing_msgs) = mpsc::channel(100);
         Server {
             tx_outgoing_msgs,
             rx_outgoing_msgs,
             tx_incoming_msgs,
-            address: address.to_owned(),
+            address: address.into(),
             client_senders: Vec::new(),
         }
     }
