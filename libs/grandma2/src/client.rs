@@ -1,14 +1,11 @@
 extern crate md5;
 
-use std::{
-    io::Write,
-    net::{IpAddr, TcpStream},
-};
+use std::{io::Write, net::TcpStream};
 
 use tungstenite::{stream::MaybeTlsStream, WebSocket};
 use url::Url;
 
-use crate::messages::{SendMsg, ReceiveMsg, Request};
+use crate::messages::{ReceiveMsg, Request, SendMsg};
 
 #[derive(Debug)]
 pub struct GrandMa2 {
@@ -36,7 +33,6 @@ impl GrandMa2 {
     }
 
     pub fn connect(&mut self) {
-        println!("{:?}", self);
         let (ws_stream, _response) =
             tungstenite::connect(self.url.clone()).expect("Failed to connect");
         self.websocket = Some(ws_stream);

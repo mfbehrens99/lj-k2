@@ -5,7 +5,7 @@ mod resolume;
 use grandma2::GrandMa2;
 
 use midi_parse::{Channel, MidiMessage, Note, Velocity};
-use tokio::sync::mpsc;
+use tokio::{signal, sync::mpsc};
 
 use crate::{
     frontend::SendMessage,

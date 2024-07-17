@@ -1,4 +1,4 @@
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{de, Deserialize, Deserializer};
 use serde_json::Value;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -80,7 +80,7 @@ impl<'de> Deserialize<'de> for MaData {
             vec
         };
 
-        Ok(MaData { data: data })
+        Ok(MaData::new(data))
     }
 }
 
@@ -141,22 +141,14 @@ mod test {
         let msg = r###"{"i":{"t":"1","c":"#C0C0C0"},"oType":{"t":" P","c":"#FFFFFF"},"oI":{"t":"1","c":"#FFFFFF"},"tt":{"t":"BARS","c":"#FFFFFF"},"bC":"#000000","bdC":"#00FFFF","cues":{"bC":"#003F3F","items":[{"pgs":{}}]},"combinedItems":1,"iExec":0,"isRun":0,"executorBlocks":[{"button1":{"id":0,"t":"Flash","s":false,"c":"#FFFF00","bdC":"#00FFFF","leftLED":{},"rightLED":{}},"button2":{"id":1,"t":"Black","s":false,"c":"#FFFFFF","bdC":"#00FFFF","leftLED":{},"rightLED":{}},"fader":{"bdC":"#00FFFF","tt":"Mstr","v":1.000,"vT":"100%","min":0.000,"max":1.000},"button3":{"id":2,"t":"SelFix","s":false,"c":"#FFFFFF","bdC":"#00FFFF","leftLED":{},"rightLED":{}}}]}"###;
         let msg_parsed: MaChannel = serde_json::from_str(msg).unwrap();
         assert_eq!(
-            MaChannel {
-                channel: 1,
-                name: "BARS".to_owned(),
-                color: "#00FFFF".to_owned()
-            },
+            MaChannel::new(1, "BARS", "#00FFFF"),
             msg_parsed
         );
 
         let msg_value = Value::from_str(msg).unwrap();
         let msg_parsed: MaChannel = serde_json::from_value(msg_value).unwrap();
         assert_eq!(
-            MaChannel {
-                channel: 1,
-                name: "BARS".to_owned(),
-                color: "#00FFFF".to_owned()
-            },
+            MaChannel::new(1, "BARS", "#00FFFF"),
             msg_parsed
         );
     }
@@ -172,16 +164,8 @@ mod test {
         assert_eq!(
             MaData {
                 data: vec![
-                    MaChannel {
-                        channel: 1,
-                        name: "BARS".to_owned(),
-                        color: "#00FFFF".to_owned()
-                    },
-                    MaChannel {
-                        channel: 2,
-                        name: "SSALL".to_owned(),
-                        color: "#FF7F00".to_owned()
-                    }
+                    MaChannel::new(1, "BARS", "#00FFFF"),
+                    MaChannel::new(2, "SSALL", "#FF7F00"),
                 ]
             },
             msg_parsed
