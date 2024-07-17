@@ -33,7 +33,7 @@ impl Server {
     }
 
     pub async fn run(&mut self) {
-        let listener = TcpListener::bind(&self.address).await.unwrap();
+        let listener = TcpListener::bind(&self.address).await.expect(&format!("Cannot listen on address {}", self.address));
         println!("Listening for frontend on {}", self.address);
 
         let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5));

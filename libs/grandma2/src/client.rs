@@ -41,28 +41,45 @@ impl GrandMa2 {
     }
 
     pub async fn run(&mut self) {
-        let msg = self
+        let msg_raw = self
             .websocket
             .as_mut()
             .expect("GrandMA is not connected to any websocket!")
             .read()
             .unwrap();
-        let msg_parsed: ReceiveMsg =
-            serde_json::from_str(msg.into_text().unwrap().as_str()).unwrap();
-        println!("{:?}", msg_parsed)
+        let msg_string = msg_raw.into_text().unwrap();
+        let msg: ReceiveMsg = serde_json::from_str(&msg_string).expect(&format!("Could not parse message: '{}'", msg_string));
+        println!("{:?}", msg);
+        self.handle_message(msg)
+    }
+
+    fn handle_message(&mut self, msg: ReceiveMsg) {
+        match msg {
+            ReceiveMsg::Status {status, app_type} => {
+                if status == "server ready" && app_type == "gma2" {
+                    self.login();
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn send(&mut self, msg: SendMsg) {
+        if let Some(websocket) = self.websocket.as_mut() {
+            let msg_string = serde_json::to_string(&msg).unwrap();
+            print!("[GrandMa2] Sending '{}'", msg_string);
+            websocket.get_mut().write(msg_string.as_bytes()).unwrap();
+        }
     }
 
     fn login(&mut self) {
-        if let Some(websocket) = self.websocket.as_mut() {
-            let login_msg = SendMsg::Request(Request::Login {
-                username: self.username.clone(),
-                password: self.password.clone(),
-                max_requests: 10,
-                session: self.session_id,
-            });
-            let msg_string = serde_json::to_string(&login_msg).unwrap();
-            websocket.get_mut().write(msg_string.as_bytes()).unwrap();
-        }
+        let login_msg = SendMsg::Request(Request::Login {
+            username: self.username.clone(),
+            password: self.password.clone(),
+            max_requests: 10,
+            session: self.session_id,
+        });
+        self.send(login_msg);
     }
 
     pub fn close_connection(&mut self) {

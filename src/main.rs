@@ -5,7 +5,7 @@ mod resolume;
 use grandma2::GrandMa2;
 
 use midi_parse::{Channel, MidiMessage, Note, Velocity};
-use tokio::{signal, sync::mpsc};
+use tokio::sync::mpsc;
 
 use crate::{
     frontend::SendMessage,
@@ -15,7 +15,7 @@ use crate::{
 #[tokio::main]
 async fn main() {
     let (frontend_tx, mut frontend_rx) = mpsc::channel(100);
-    let mut frontend = frontend::Server::new("http://0.0.0.0:9002", frontend_tx);
+    let mut frontend = frontend::Server::new("0.0.0.0:9002", frontend_tx);
     let frontend_tx = frontend.get_sender();
 
     let (midi_tx, mut midi_rx) = mpsc::channel(100);
@@ -24,7 +24,7 @@ async fn main() {
     let mut midi_out = midi::MidiOut::new();
     let midi_tx = midi_out.get_sender();
 
-    let mut grandma = GrandMa2::new("ws://10.10.10.100", "remote", "remote");
+    let mut grandma = GrandMa2::new("ws://10.1.1.10", "remote", "remote");
     grandma.connect();
 
     tokio::task::spawn(async move {

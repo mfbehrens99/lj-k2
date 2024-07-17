@@ -79,6 +79,11 @@ pub enum ReceiveMsg {
         world_index: u8,
         session: i32,
     },
+    #[serde(rename_all = "camelCase")]
+    Status {
+        status: String,
+        app_type: String,
+    },
     Response(Response),
 }
 
