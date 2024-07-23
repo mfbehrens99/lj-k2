@@ -1,6 +1,8 @@
 mod client;
-mod messages;
+mod interface;
 mod item;
+mod messages;
 
-pub use client::GrandMa2;
+pub use interface::GrandMa2;
+pub use client::GrandMa2Client;
 

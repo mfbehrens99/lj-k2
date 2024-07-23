@@ -25,7 +25,6 @@ async fn main() {
     let midi_tx = midi_out.get_sender();
 
     let mut grandma = GrandMa2::new("ws://10.1.1.10", "remote", "remote");
-    grandma.connect();
 
     tokio::task::spawn(async move {
         loop {
@@ -52,9 +51,16 @@ async fn main() {
                         }
                     }
                 }
+                Some(msg) = grandma.recv() => {
+                    match msg {
+                        _ => {
+                            println!("Received {msg:?}")
+                        }
+                    }
+                }
             }
         }
     });
 
-    tokio::join!(frontend.run(), midi_in.run(), midi_out.run(), grandma.run(),);
+    tokio::join!(frontend.run(), midi_in.run(), midi_out.run());
 }

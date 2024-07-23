@@ -74,6 +74,7 @@ pub enum Request {
 pub enum ReceiveMsg {
     #[serde(rename_all = "camelCase")]
     Session {
+        force_login: Option<bool>,
         realtime: bool,
         world_index: u8,
         session: i8,
@@ -87,6 +88,9 @@ pub enum ReceiveMsg {
     #[serde(rename_all = "camelCase")]
     ForceLogin {
         force_login: bool,
+        session: i8,
+        realtime: bool,
+        world_index: i8,
     },
     #[serde(rename_all = "camelCase")]
     Text {
@@ -235,6 +239,7 @@ mod test {
         let msg_parsed: ReceiveMsg = serde_json::from_str(msg).unwrap();
         assert_eq!(
             ReceiveMsg::Session {
+                force_login: None,
                 realtime: false,
                 world_index: 0,
                 session: 3
