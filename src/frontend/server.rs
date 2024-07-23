@@ -72,7 +72,7 @@ impl Server {
 
     async fn send(&self, msg: SendMessage) {
         let msg_str: String = serde_json::to_string(&msg).unwrap();
-        println!("Sending out: {}", msg_str);
+        println!("[Frontend] Sending: {}", msg_str);
         for sender in self.client_senders.iter() {
             sender.send(msg_str.clone()).await.unwrap();
         }

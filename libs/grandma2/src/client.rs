@@ -2,10 +2,23 @@ extern crate md5;
 
 use std::{io::Write, net::TcpStream};
 
+use tokio::sync::mpsc;
 use tungstenite::{stream::MaybeTlsStream, WebSocket};
 use url::Url;
 
-use crate::messages::{ReceiveMsg, Request, SendMsg};
+use crate::messages::{ReceiveMsg, Request, Response, SendMsg};
+
+const MAX_REQUESTS: u8 = 9;
+
+#[derive(Debug)]
+enum Error {
+    MessageHandlerNotImplemented,
+    GrandMA2Connection,
+    WebRemoteDisabled,
+    LoginFailed,
+}
+
+enum MaRequest {}
 
 #[derive(Debug)]
 pub struct GrandMa2 {
@@ -13,8 +26,9 @@ pub struct GrandMa2 {
     username: String,
     password: String,
     websocket: Option<WebSocket<MaybeTlsStream<TcpStream>>>,
-    session_id: u8,
-    // ws_receiver: WsReceiver,
+    logged_in: bool,
+    session_id: i8,
+    num_requests: u8,
 }
 
 impl GrandMa2 {
@@ -28,7 +42,9 @@ impl GrandMa2 {
             username: username.into(),
             password: format!("{:x}", md5::compute(password)),
             websocket: None,
-            session_id: 5,
+            logged_in: false,
+            session_id: 0,
+            num_requests: 0,
         }
     }
 
@@ -36,8 +52,6 @@ impl GrandMa2 {
         let (ws_stream, _response) =
             tungstenite::connect(self.url.clone()).expect("Failed to connect");
         self.websocket = Some(ws_stream);
-
-        self.login();
     }
 
     pub async fn run(&mut self) {
@@ -48,31 +62,64 @@ impl GrandMa2 {
             .read()
             .unwrap();
         let msg_string = msg_raw.into_text().unwrap();
-        let msg: ReceiveMsg = serde_json::from_str(&msg_string).expect(&format!("Could not parse message: '{}'", msg_string));
-        println!("{:?}", msg);
-        self.handle_message(msg)
+        let msg: ReceiveMsg = serde_json::from_str(&msg_string)
+            .expect(&format!("Could not parse message: '{}'", msg_string));
+        println!("[GrandMa2] Receive: {:?}", msg);
+        self.handle_message(msg).unwrap();
     }
 
-    fn handle_message(&mut self, msg: ReceiveMsg) {
+    fn handle_message(&mut self, msg: ReceiveMsg) -> Result<(), Error> {
+        // Handle weird GrandMa behaviour
+        self.num_requests += 1;
+        if self.num_requests >= MAX_REQUESTS {
+            self.send_session()
+        }
+
         match msg {
-            ReceiveMsg::Status {status, app_type} => {
-                if status == "server ready" && app_type == "gma2" {
-                    self.login();
+            ReceiveMsg::Session { session, .. } => match session {
+                -1 => Err(Error::WebRemoteDisabled),
+                0 => Err(Error::GrandMA2Connection),
+                _ => {
+                    self.session_id = session;
+                    Ok(())
                 }
+            },
+            ReceiveMsg::Status { status, app_type }
+                if status.as_ref() == "server ready" && app_type.as_ref() == "gma2" =>
+            {
+                self.send_session();
+                Ok(())
             }
-            _ => {}
+            ReceiveMsg::ForceLogin { force_login: true } => {
+                self.send_login();
+                Ok(())
+            }
+            ReceiveMsg::Response(Response::Login { result: true, .. }) => {
+                // Login successfull
+                self.logged_in = true;
+                Ok(())
+            }
+            ReceiveMsg::Response(Response::Login { result: false, .. }) => Err(Error::LoginFailed),
+            _ => Err(Error::MessageHandlerNotImplemented),
         }
     }
 
     fn send(&mut self, msg: SendMsg) {
         if let Some(websocket) = self.websocket.as_mut() {
+            println!("[GrandMa2] Sending: {:?}", msg);
             let msg_string = serde_json::to_string(&msg).unwrap();
-            print!("[GrandMa2] Sending '{}'", msg_string);
             websocket.get_mut().write(msg_string.as_bytes()).unwrap();
         }
     }
 
-    fn login(&mut self) {
+    fn send_session(&mut self) {
+        let session_msg = SendMsg::Session {
+            session: self.session_id,
+        };
+        self.send(session_msg)
+    }
+
+    fn send_login(&mut self) {
         let login_msg = SendMsg::Request(Request::Login {
             username: self.username.clone(),
             password: self.password.clone(),
@@ -83,14 +130,11 @@ impl GrandMa2 {
     }
 
     pub fn close_connection(&mut self) {
-        if let Some(websocket) = self.websocket.as_mut() {
-            let close_msg = SendMsg::Request(Request::Close {
-                session: self.session_id,
-                max_requests: 10,
-            });
-            let msg_string = serde_json::to_string(&close_msg).unwrap();
-            websocket.get_mut().write(msg_string.as_bytes()).unwrap();
-        }
+        let close_msg = SendMsg::Request(Request::Close {
+            session: self.session_id,
+            max_requests: 10,
+        });
+        self.send(close_msg)
     }
 }
 

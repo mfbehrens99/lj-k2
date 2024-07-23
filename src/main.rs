@@ -42,13 +42,11 @@ async fn main() {
                 msg = frontend_rx.recv() => {
                     if let Some(msg) = msg {
                         match msg {
-                            frontend::ReceiveMessage::SetPreset{row, column} => {
-                                if row == 0 {
+                            frontend::ReceiveMessage::SetPreset{row: 0, column} => {
                                     midi_tx.send(MessageMidi { midi_msg: MidiMessage::NoteOn { channel: Channel(0), note: Note(11 + column), velocity: Velocity(127) }, device_type: DeviceType::Launchpad}).await.unwrap();
-                                }
-                                if row == 1 {
+                            }
+                            frontend::ReceiveMessage::SetPreset{row: 1, column} => {
                                     midi_tx.send(MessageMidi { midi_msg: MidiMessage::NoteOn { channel: Channel(0), note: Note(11 + column), velocity: Velocity(0) }, device_type: DeviceType::Launchpad}).await.unwrap();
-                                }
                             }
                             _ => {}
                         }

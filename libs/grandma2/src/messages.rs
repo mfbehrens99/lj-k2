@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::item::{MaData, MaDataResponse};
 
@@ -8,7 +7,7 @@ use crate::item::{MaData, MaDataResponse};
 pub enum SendMsg {
     #[serde(rename_all = "camelCase")]
     Session {
-        session: u8,
+        session: i8,
     },
     Request(Request),
 }
@@ -21,14 +20,14 @@ pub enum Request {
     GetData {
         data: String,
         max_requests: u16,
-        session: u8,
+        session: i8,
     },
     #[serde(rename_all = "camelCase")]
     Login {
         username: String,
         password: String,
         max_requests: u16,
-        session: u8,
+        session: i8,
     },
     #[serde(rename_all = "camelCase")]
     Playbacks {
@@ -40,7 +39,7 @@ pub enum Request {
         exec_button_view_mode: u8,
         buttons_view_mode: u8,
         max_requests: u16,
-        session: u8,
+        session: i8,
     },
     #[serde(rename_all = "camelCase")]
     #[serde(rename = "playbacks_userInput")]
@@ -53,7 +52,7 @@ pub enum Request {
         pressed: bool,
         released: bool,
         max_requests: u16,
-        session: u8,
+        session: i8,
     },
     #[serde(rename_all = "camelCase")]
     #[serde(rename = "playbacks_userInput")]
@@ -64,10 +63,10 @@ pub enum Request {
         #[serde(rename = "type")]
         input_type: u8,
         max_requests: u16,
-        session: u8,
+        session: i8,
     },
     #[serde(rename_all = "camelCase")]
-    Close { session: u8, max_requests: u16 },
+    Close { session: i8, max_requests: u16 },
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -77,14 +76,22 @@ pub enum ReceiveMsg {
     Session {
         realtime: bool,
         world_index: u8,
-        session: i32,
-    },
-    #[serde(rename_all = "camelCase")]
-    Status {
-        status: String,
-        app_type: String,
+        session: i8,
     },
     Response(Response),
+    #[serde(rename_all = "camelCase")]
+    Status {
+        status: Box<str>,
+        app_type: Box<str>,
+    },
+    #[serde(rename_all = "camelCase")]
+    ForceLogin {
+        force_login: bool,
+    },
+    #[serde(rename_all = "camelCase")]
+    Text {
+        text: Box<str>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
