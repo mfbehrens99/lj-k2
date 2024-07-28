@@ -1,7 +1,7 @@
 use serde::{de, Deserialize, Deserializer};
 use serde_json::Value;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MaChannel {
     channel: u64,
     name: String,
@@ -9,8 +9,15 @@ pub struct MaChannel {
 }
 
 impl MaChannel {
-    pub fn new<S>(channel: u64, name: S, color: S) -> Self where S: Into<String> {
-        Self {channel: channel, name: name.into(), color: color.into()}
+    pub fn new<S>(channel: u64, name: S, color: S) -> Self
+    where
+        S: Into<String>,
+    {
+        Self {
+            channel: channel,
+            name: name.into(),
+            color: color.into(),
+        }
     }
 }
 
@@ -42,14 +49,14 @@ impl<'de> Deserialize<'de> for MaChannel {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MaData {
     data: Vec<MaChannel>,
 }
 
 impl MaData {
     pub fn new(data: Vec<MaChannel>) -> Self {
-        Self {data: data}
+        Self { data: data }
     }
 }
 
@@ -84,7 +91,7 @@ impl<'de> Deserialize<'de> for MaData {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MaDataResponse {
     pub set: String,
     pub clear: String,
@@ -115,16 +122,16 @@ impl<'de> Deserialize<'de> for MaDataResponse {
                     "clear" => clear = j.as_str(),
                     "solo" => solo = j.as_str(),
                     "high" => high = j.as_str(),
-                    _ => return Err(de::Error::missing_field("i.t"))
+                    _ => return Err(de::Error::missing_field("i.t")),
                 }
             }
         }
 
         Ok(MaDataResponse {
-            set: set.ok_or(de::Error::missing_field("i.t"))?.to_owned(),
-            clear: clear.ok_or(de::Error::missing_field("i.t"))?.to_owned(),
-            solo: solo.ok_or(de::Error::missing_field("i.t"))?.to_owned(),
-            high: high.ok_or(de::Error::missing_field("i.t"))?.to_owned(),
+            set: set.ok_or(de::Error::missing_field("set"))?.to_owned(),
+            clear: clear.ok_or(de::Error::missing_field("clear"))?.to_owned(),
+            solo: solo.ok_or(de::Error::missing_field("solo"))?.to_owned(),
+            high: high.ok_or(de::Error::missing_field("high"))?.to_owned(),
         })
     }
 }
@@ -140,17 +147,11 @@ mod test {
     fn test_item() {
         let msg = r###"{"i":{"t":"1","c":"#C0C0C0"},"oType":{"t":" P","c":"#FFFFFF"},"oI":{"t":"1","c":"#FFFFFF"},"tt":{"t":"BARS","c":"#FFFFFF"},"bC":"#000000","bdC":"#00FFFF","cues":{"bC":"#003F3F","items":[{"pgs":{}}]},"combinedItems":1,"iExec":0,"isRun":0,"executorBlocks":[{"button1":{"id":0,"t":"Flash","s":false,"c":"#FFFF00","bdC":"#00FFFF","leftLED":{},"rightLED":{}},"button2":{"id":1,"t":"Black","s":false,"c":"#FFFFFF","bdC":"#00FFFF","leftLED":{},"rightLED":{}},"fader":{"bdC":"#00FFFF","tt":"Mstr","v":1.000,"vT":"100%","min":0.000,"max":1.000},"button3":{"id":2,"t":"SelFix","s":false,"c":"#FFFFFF","bdC":"#00FFFF","leftLED":{},"rightLED":{}}}]}"###;
         let msg_parsed: MaChannel = serde_json::from_str(msg).unwrap();
-        assert_eq!(
-            MaChannel::new(1, "BARS", "#00FFFF"),
-            msg_parsed
-        );
+        assert_eq!(MaChannel::new(1, "BARS", "#00FFFF"), msg_parsed);
 
         let msg_value = Value::from_str(msg).unwrap();
         let msg_parsed: MaChannel = serde_json::from_value(msg_value).unwrap();
-        assert_eq!(
-            MaChannel::new(1, "BARS", "#00FFFF"),
-            msg_parsed
-        );
+        assert_eq!(MaChannel::new(1, "BARS", "#00FFFF"), msg_parsed);
     }
 
     #[test]

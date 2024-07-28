@@ -1,8 +1,9 @@
 mod client;
 mod interface;
-mod item;
-mod messages;
+mod interface_msg;
+mod ma2_msg;
 
+mod error;
+
+pub use error::{Ma2Error, Result};
 pub use interface::GrandMa2;
-pub use client::GrandMa2Client;
-

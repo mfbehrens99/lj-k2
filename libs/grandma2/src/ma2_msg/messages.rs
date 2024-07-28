@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::item::{MaData, MaDataResponse};
+use crate::ma2_msg::items::{MaData, MaDataResponse};
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum SendMsg {
     #[serde(rename_all = "camelCase")]
@@ -12,7 +12,7 @@ pub enum SendMsg {
     Request(Request),
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "requestType")]
 #[serde(rename_all = "lowercase")]
 pub enum Request {
@@ -69,7 +69,7 @@ pub enum Request {
     Close { session: i8, max_requests: u16 },
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(untagged)]
 pub enum ReceiveMsg {
     #[serde(rename_all = "camelCase")]
@@ -86,19 +86,12 @@ pub enum ReceiveMsg {
         app_type: Box<str>,
     },
     #[serde(rename_all = "camelCase")]
-    ForceLogin {
-        force_login: bool,
-        session: i8,
-        realtime: bool,
-        world_index: i8,
-    },
-    #[serde(rename_all = "camelCase")]
     Text {
         text: Box<str>,
     },
 }
 
-#[derive(Debug, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(tag = "responseType")]
 #[serde(rename_all = "lowercase")]
 pub enum Response {
@@ -128,9 +121,10 @@ pub enum Response {
 mod test {
     use std::str::FromStr;
 
+    use serde::Value;
     use serde_json::json;
 
-    use crate::item::MaChannel;
+    use crate::message_item::MaChannel;
 
     use super::*;
 
