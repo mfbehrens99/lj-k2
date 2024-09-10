@@ -1,11 +1,11 @@
 use std::fmt;
 
-use crate::{
-    interface_msg::{Button, Fader, MaRequest},
-    ma2_msg::{ReceiveMsg, SendMsg},
-};
+use crate::interface::MaRequest;
+use crate::client::{ReceiveMsg, SendMsg};
+use crate::types::{ButtonExecutor, FaderExecutor};
+use crate::Executor;
 
-pub type Result<T> = std::result::Result<T, Ma2Error>;
+pub type Result<T> = std::result::Result<T, Box<Ma2Error>>;
 
 #[derive(Debug)]
 pub enum Ma2Error {
@@ -14,15 +14,18 @@ pub enum Ma2Error {
         url: String,
         tungstenite_error: tungstenite::Error,
     },
-    NotYetConnected,
+    WebsocketNotYetConnected,
     // Ma Connection Errors
     ConnectedButInvalidSessionId,
     WebRemoteDisabled,
-    FailedToSend(tungstenite::Error),
-    // Handler not implemented
+    WebsocketFailedToSend(tungstenite::Error),
+    // Messages/Handler not implemented
+    CouldNotDeserializeReceiveMsg(String, Box<serde_json::Error>),
+    CouldNotSerializeSendMsg(SendMsg),
     MessageHandlerNotImplemented(ReceiveMsg),
     RequestHandlerNotImplemented(MaRequest),
     // Interface Channels closed
+    NotYetConnected,
     RequestChannelClosed,
     EventChannelClosed,
     // Ma2 errors
@@ -31,11 +34,14 @@ pub enum Ma2Error {
         password: String,
         hashed_password: String,
     },
-    InvalidButtonRange(Button, Button),
-    InvalidFaderRange(Fader, Fader),
+    InvalidButtonRange(ButtonExecutor, ButtonExecutor),
+    InvalidFaderRange(FaderExecutor, FaderExecutor),
     // Serde errors
     SerializeError(SendMsg),
     DeserialzeError(String),
+    // Types
+    ButtonIdOutOfRange(Executor),
+    FaderIdOutOfRange(Executor),
 }
 
 impl fmt::Display for Ma2Error {

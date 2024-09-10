@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 extern crate md5;
 
@@ -14,17 +14,20 @@ use tokio::{
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use tungstenite::Message;
 
-use crate::interface_msg::{MaEvent, MaRequest};
+use crate::{client::ReceiveMsg, types::{ButtonRange, FaderRange}};
 use crate::{
-    interface_msg::{ButtonRange, FaderRange},
-    ma2_msg::{ReceiveMsg, Request, Response, SendMsg},
+    interface::{MaEvent, MaRequest},
+    types::{ButtonData, FaderData, Ma2Data},
+    ButtonExecutor, FaderExecutor,
 };
 use crate::{Ma2Error, Result};
+
+use super::{messages::{Request, Response}, SendMsg};
 
 const MAX_REQUESTS: u8 = 9;
 
 #[derive(Debug)]
-pub(crate) struct GrandMa2Client {
+pub struct GrandMa2Client {
     // internals
     ws_sink: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
     ws_stream: SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
@@ -37,6 +40,9 @@ pub(crate) struct GrandMa2Client {
     password: String,
     subscribed_button_range: Option<ButtonRange>,
     subscribed_fader_range: Option<FaderRange>,
+
+    // state
+    state: Ma2State,
     logged_in: bool,
     session_id: i8,
     num_requests: u8,
@@ -66,34 +72,18 @@ impl GrandMa2Client {
             subscribed_button_range: None,
             subscribed_fader_range: None,
 
-            // states
+            // state
             logged_in: false,
             session_id: -1,
             num_requests: 0,
-        }
-    }
-    /// The main loop of the GrandMa2 client
-    ///
-    /// The main purpose of this function is to handle the error
-    /// of the run_error method.
-    pub async fn run(&mut self) {
-        // Handle the error apropriately
-        match self.run_error().await {
-            Ok(_) => {
-                println!("[GrandMa2 Client] Exited Gracefully");
-                self.send_interface(MaEvent::Disconnected);
-            }
-            Err(err) => {
-                println!("[GrandMa2 Client] Exited with error {:?}", err);
-                self.send_interface(MaEvent::Error(err));
-            }
+            state: Ma2State::new(),
         }
     }
 
-    /// This method is running the actual main loop for the GrandMa2 client
+    /// This method is running the main loop for the GrandMa2 client
     ///
-    /// It is executed by the run method to handle the error gracefully
-    async fn run_error(&mut self) -> Result<()> {
+    /// `run` has be executed right after the connection has been established.
+    pub async fn run(&mut self) -> Result<()> {
         loop {
             tokio::select! {
                 msg = self.rx_request.recv() => {
@@ -106,15 +96,15 @@ impl GrandMa2Client {
                                 return Ok(())
                             }
                         }
-                        None => {return Err(Ma2Error::RequestChannelClosed);}
+                        None => {return Err(Ma2Error::RequestChannelClosed.into());}
                     }
                 }
                 Some(Ok(msg)) = self.ws_stream.next() => {
                     // println!("[GrandMa2] Receiving RAW {msg:?}");
                     match msg {
                         Message::Text(msg_string) => {
-                            let msg: ReceiveMsg = serde_json::from_str(&msg_string)
-                                .expect(&format!("Could not parse message: '{}'", msg_string));
+                            let msg: ReceiveMsg = serde_json::from_value(serde_json::from_str(&msg_string)
+                                .unwrap()).map_err(|err| Ma2Error::CouldNotDeserializeReceiveMsg(msg_string, Box::new(err)))?;
                             println!("[GrandMa2] Receive: {:?}", msg);
                             self.handle_ma2_message(msg).await?;
                         }
@@ -151,10 +141,10 @@ impl GrandMa2Client {
                 Ok(())
             }
             ReceiveMsg::Session { session, .. } => match session {
-                ..=-1 => Err(Ma2Error::WebRemoteDisabled),
+                ..=-1 => Err(Ma2Error::WebRemoteDisabled.into()),
                 0 => {
                     self.send_session().await?;
-                    Err(Ma2Error::ConnectedButInvalidSessionId)
+                    Err(Ma2Error::ConnectedButInvalidSessionId.into())
                 }
                 _ => {
                     self.session_id = session;
@@ -168,7 +158,7 @@ impl GrandMa2Client {
                 Ok(())
             }
             ReceiveMsg::Response(Response::Login { result, .. }) => {
-                self.send_interface(MaEvent::LoginSuccessful(result));
+                self.send_interface(MaEvent::LoginSuccessful(result))?;
 
                 if result {
                     self.logged_in = true;
@@ -178,10 +168,23 @@ impl GrandMa2Client {
                         username: self.username.clone(),
                         password: self.password.clone(),
                         hashed_password: self.get_hashed_password(),
-                    })
+                    }
+                    .into())
                 }
             }
-            _ => Err(Ma2Error::MessageHandlerNotImplemented(msg)),
+            ReceiveMsg::Response(Response::Playbacks { item_groups, .. }) => {
+                let diff = self.state.diff_and_update(item_groups);
+                for channel in diff.fader_data {
+                    let msg = MaEvent::FaderChanged(channel);
+                    self.send_interface(msg)?;
+                }
+                for channel in diff.button_data {
+                    let msg = MaEvent::ButtonChanged(channel);
+                    self.send_interface(msg)?;
+                }
+                Ok(())
+            }
+            _ => Err(Ma2Error::MessageHandlerNotImplemented(msg).into()),
         }
     }
 
@@ -249,11 +252,13 @@ impl GrandMa2Client {
         self.ws_sink
             .send(msg)
             .await
-            .map_err(|e| Ma2Error::FailedToSend(e))
+            .map_err(|e| Ma2Error::WebsocketFailedToSend(e).into())
     }
 
-    fn send_interface(&self, message: MaEvent) {
-        self.tx_event.send(message).unwrap();
+    fn send_interface(&self, message: MaEvent) -> Result<()> {
+        self.tx_event
+            .send(message)
+            .map_err(|_| Ma2Error::EventChannelClosed.into())
     }
 
     async fn send_session(&mut self) -> Result<()> {
@@ -287,5 +292,63 @@ impl GrandMa2Client {
 
     fn get_hashed_password(&self) -> String {
         format!("{:x}", md5::compute(&self.password))
+    }
+}
+
+#[derive(Debug)]
+pub struct Ma2State {
+    buttons: HashMap<ButtonExecutor, ButtonData>,
+    faders: HashMap<FaderExecutor, FaderData>,
+}
+
+impl Ma2State {
+    pub fn new() -> Self {
+        Self {
+            buttons: HashMap::new(),
+            faders: HashMap::new(),
+        }
+    }
+
+    pub fn get_button(&self, button: ButtonExecutor) -> Option<&ButtonData> {
+        self.buttons.get(&button)
+    }
+
+    pub fn get_fader(&self, fader: FaderExecutor) -> Option<&FaderData> {
+        self.faders.get(&fader)
+    }
+
+    pub fn diff_and_update(&mut self, data: Ma2Data) -> Ma2Data {
+        let Ma2Data {
+            fader_data,
+            button_data,
+        } = data;
+
+        let mut fader_changes = Vec::new();
+        for fader_data in fader_data.into_iter() {
+            if let Some(old_fader_data) = self.faders.get_mut(fader_data.get_executer()) {
+                if old_fader_data != &fader_data {
+                    fader_changes.push(fader_data.clone());
+                    *old_fader_data = fader_data;
+                }
+            } else {
+                self.faders
+                    .insert(fader_data.get_executer().to_owned(), fader_data.clone());
+                fader_changes.push(fader_data);
+            }
+        }
+        let mut button_changes = Vec::new();
+        for button_data in button_data.into_iter() {
+            if let Some(old_button_data) = self.buttons.get_mut(button_data.get_executer()) {
+                if old_button_data != &button_data {
+                    button_changes.push(button_data.clone());
+                    *old_button_data = button_data;
+                }
+            } else {
+                self.buttons
+                    .insert(button_data.get_executer().to_owned(), button_data.clone());
+                button_changes.push(button_data);
+            }
+        }
+        Ma2Data::new(fader_changes, button_changes)
     }
 }

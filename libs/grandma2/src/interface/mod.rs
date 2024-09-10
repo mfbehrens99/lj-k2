@@ -1,3 +1,5 @@
+mod messages;
+
 extern crate md5;
 
 use tokio::{
@@ -5,15 +7,29 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{client::GrandMa2Client, Ma2Error, Result};
+use crate::{client::GrandMa2Client, types::FaderExecutor, ButtonExecutor, Ma2Error, Result};
 
-use super::interface_msg::{MaEvent, MaRequest};
+pub use messages::{MaEvent, MaRequest};
 
 /// The main GrandMa2 struct to connect and control GrandMa2
 ///
-/// ```
-/// let grandma = GrandMa2::new("ws://127.0.0.1", "remote", "password");
-/// grandma.connect().await.unwrap();
+/// ``` rust,ignore
+/// use grandma2::GrandMa2;
+///
+/// let grandma = GrandMa2::new("ws://localhost", "username", "password");
+/// let mut grandma_conn = grandma.connect();
+///
+/// tokio::join!{
+///     grandma_conn.run(),
+///     do_things(),
+/// }
+///
+/// async fn do_things() {
+///     loop {
+///         use tokio::time::{sleep, Duration};
+///         sleep(Duration::from_millis(100)).await;
+///     }
+/// }
 /// ```
 #[derive(Debug)]
 pub struct GrandMa2 {
@@ -41,7 +57,7 @@ impl GrandMa2 {
         }
     }
 
-    pub async fn connect(&mut self) -> Result<()> {
+    pub async fn connect(&mut self) -> Result<GrandMa2Client> {
         // Connect to the websocket
         let (ws_stream, _response) =
             tokio_tungstenite::connect_async(&self.url)
@@ -58,27 +74,42 @@ impl GrandMa2 {
         self.tx_request = Some(tx_request);
         self.rx_event = Some(rx_event);
 
-        let mut client = GrandMa2Client::new(
+        Ok(GrandMa2Client::new(
             ws_stream,
             rx_request,
             tx_event,
             self.username.clone(),
             self.password.clone(),
-        );
+        ))
+    }
 
-        let join_handle = tokio::spawn(async move {
-            client.run().await;
-        });
-
-        self.join_handler = Some(join_handle);
-        Ok(())
+    fn send(&mut self, msg: MaRequest) -> Result<()> {
+        if let Some(tx_request) = self.tx_request.as_mut() {
+            return tx_request
+                .send(msg)
+                .map_err(|_| Ma2Error::RequestChannelClosed.into());
+        }
+        Err(Ma2Error::NotYetConnected.into())
     }
 
     pub async fn recv(&mut self) -> Result<MaEvent> {
         if let Some(rx_event) = self.rx_event.as_mut() {
-            return rx_event.recv().await.ok_or(Ma2Error::EventChannelClosed);
+            return rx_event
+                .recv()
+                .await
+                .ok_or(Ma2Error::EventChannelClosed.into());
         }
-        Err(Ma2Error::NotYetConnected)
+        Err(Ma2Error::WebsocketNotYetConnected.into())
+    }
+
+    pub fn subscribe_fader(&mut self, start: FaderExecutor, end: FaderExecutor) -> Result<()> {
+        let msg = MaRequest::SubscribeFader(start, end);
+        self.send(msg)
+    }
+
+    pub fn subscribe_button(&mut self, start: ButtonExecutor, end: ButtonExecutor) -> Result<()> {
+        let msg = MaRequest::SubscribeButton(start, end);
+        self.send(msg)
     }
 
     pub fn close_connection(&mut self) {
@@ -96,5 +127,13 @@ impl Drop for GrandMa2 {
         if let Some(join_handler) = self.join_handler.take() {
             while !join_handler.is_finished() {}
         }
+    }
+}
+
+struct MaValues {}
+
+impl MaValues {
+    pub fn new() -> Self {
+        Self {}
     }
 }

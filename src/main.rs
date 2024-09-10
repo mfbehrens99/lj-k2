@@ -2,7 +2,7 @@ mod frontend;
 mod midi;
 mod resolume;
 
-use grandma2::GrandMa2;
+use grandma2::{interface::MaEvent, ButtonExecutor, FaderExecutor, GrandMa2};
 
 use midi_parse::{Channel, MidiMessage, Note, Velocity};
 use tokio::sync::mpsc;
@@ -25,12 +25,9 @@ async fn main() {
     let midi_tx = midi_out.get_sender();
 
     let mut grandma = GrandMa2::new("ws://10.1.1.10", "remote", "remote");
-    if let Err(e) = grandma.connect().await {
-        eprintln!("{}", e);
-        return;
-    }
+    let mut grandma_conn = grandma.connect().await.unwrap();
 
-    tokio::task::spawn(async move {
+    let main_loop = async move {
         loop {
             tokio::select! {
                 // Receive message from Interface
@@ -57,6 +54,12 @@ async fn main() {
                 }
                 Ok(msg) = grandma.recv() => {
                     match msg {
+                        MaEvent::LoginSuccessful(state) => {
+                            if state {
+                                grandma.subscribe_fader(FaderExecutor::new(1, 1), FaderExecutor::new(1, 8)).unwrap();
+                                grandma.subscribe_button(ButtonExecutor::new(1, 101), ButtonExecutor::new(1, 191)).unwrap();
+                            }
+                        }
                         _ => {
                             println!("Received {msg:?}")
                         }
@@ -64,7 +67,15 @@ async fn main() {
                 }
             }
         }
-    });
+    };
 
-    tokio::join!(frontend.run(), midi_in.run(), midi_out.run());
+    tokio::select! {
+        _ = main_loop => {},
+        err = grandma_conn.run() => {
+            eprintln!("[GrandMa2] {err:?}")
+        },
+        _ = frontend.run() => {},
+        _ = midi_in.run() =>  {},
+        _ = midi_out.run() => {},
+    };
 }
