@@ -18,12 +18,9 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new<T>(address: T, tx_incoming_msgs: mpsc::Sender<ReceiveMessage>) -> Self
-    where
-        T: Into<String>,
-    {
+    pub fn new(address: impl Into<String>, tx_incoming_msgs: mpsc::Sender<ReceiveMessage>) -> Self {
         let (tx_outgoing_msgs, rx_outgoing_msgs) = mpsc::channel(100);
-        Server {
+        Self {
             tx_outgoing_msgs,
             rx_outgoing_msgs,
             tx_incoming_msgs,
@@ -33,7 +30,9 @@ impl Server {
     }
 
     pub async fn run(&mut self) {
-        let listener = TcpListener::bind(&self.address).await.expect(&format!("Cannot listen on address {}", self.address));
+        let listener = TcpListener::bind(&self.address)
+            .await
+            .unwrap_or_else(|_| panic!("Cannot listen on address {}", self.address));
         println!("Listening for frontend on {}", self.address);
 
         let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5));
